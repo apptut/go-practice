@@ -1,0 +1,131 @@
+官方文档：[go.dev cgo](https://pkg.go.dev/cmd/cgo "go.dev cgo")
+
+
+## Go 调用 C
+
+### 基本用法
+
+使用 `cgo` 最基本的方式是你需要准备个 `.go` 文件，然后使用注释的方式配置 `C` 语言需要暴露的接口函数代码，我们在创建一个 `cgo` 子目录演示：
+
+import { FileTree } from 'nextra/components'
+
+<FileTree>
+    <FileTree.Folder name="cgo" defaultOpen>
+        <FileTree.File name="cgo.go" />
+        <FileTree.File name="cgo_test.go" />
+    </FileTree.Folder>
+</FileTree>
+
+```go filename="cgo/cgo.go"
+// #include <stdio.h>
+// #include <errno.h>
+import "C"
+
+// Go 其它函数
+```
+上面的 `import "C"` 语句和 `#include` 注释行之间**不能有空行，必须挨着！** `#include` 指令主要用于在编写 `C` 代码时需要引入的头文件，如果你没有使用相关的函数，那么这些 `#include` 指令就不需要添加。
+
+`C` 这个包，被称之为伪包（"pseudo-package"）, 是因为它并不是真实存在的包，会由cgo解释为对C命名空间的引用的特殊名称。这句话好半句不是很好理解，我们只需要记住，有了这个命令空间后，我们在 `Go` 语言里就可以使用 `C` 语言的函数，且调用的函数都会是以 `C` 作为命名空间，比如调用 `C` 下的 `printf`函数： `C.printf`，自定义函数也是这样。** 但 `C` 语言下的静态变量是不能被 `Go` 语言调用的。**
+
+```go copy showLineNumbers filename="cgo/cgo.go" {13}
+package cgo
+
+/*
+char * run() {
+	char *rel = "hello the C";
+	return rel;
+}
+*/
+import "C"
+import "fmt"
+
+func GoRun() {
+	cstr := C.run()
+	fmt.Println(C.GoString(cstr))
+}
+
+```
+
+这个例子中，我们编写了一个 `C` 函数，返回一个 `C` 语言字符串，然后使用 `Go` 语言打印输出。我们可以使用另一个测试文件测试结果：
+
+```go copy filename="cgo/cgo_test.go"
+package cgo
+
+import "testing"
+
+func TestGoRun(t *testing.T) {
+	GoRun()
+}
+
+```
+
+最终输出结果如下：
+
+```
+=== RUN   TestGoRun
+hello the C
+--- PASS: TestGoRun (0.00s)
+```
+
+这是一个简单的跨语言接口调用，同时你也看到了。`C` 代码很简单，没有使用其它内置库，所以没使用 `#include` 指令引入其它头文件。而且注释行我们混用了单行注释和多行注释，这些都是没问题的。
+
+### 注意
+
+**但上面的示例是不完美的！** 会有内存溢出的问题。我们可以观察 `cgo.go` 的第13行代码（高亮的这行）。这里的 `cstr` 是一个 `C` 语言字符串，但是我们没有释放它，这样就会造成内存泄漏。我们可以使用 `C` 语言的 `free` 函数释放它：
+
+```go copy showLineNumbers filename="cgo/cgo.go"
+func GoRun() {
+	cstr := C.run()
+	defer C.free(unsafe.Pointer(cstr))
+
+	fmt.Println(C.GoString(cstr))
+}
+```
+
+import { Callout } from 'nextra/components'
+
+<Callout type={"warning"}>
+    记住一个原则：C 语言是没有垃圾回收机制的，所以在接收到 C 语言的字符串时，用完了一定要做内存释放操作，否则会造成内存泄漏！！！
+</Callout>
+
+同样的，如果我们是从 `Go` 语言给 `C` 语言传参的时候也需要注意这个问题，我们把上述代码扩展一下：
+
+```go copy showLineNumbers filename="cgo/cgo.go" {15,18}
+/*
+#include <stdlib.h>
+#include <string.h>
+char * run(char * v) {
+	char * rel = malloc(strlen(v) + 1);
+	strcpy(rel, v);
+
+	return rel;
+}
+*/
+import "C"
+import "fmt"
+
+func GoRun(v string) {
+	in := C.CString(v)
+	out := C.run(in)
+
+	defer C.free(unsafe.Pointer(in))
+	defer C.free(unsafe.Pointer(out))
+
+	fmt.Println(C.GoString(out))
+}
+```
+
+请注意上面的第15、18行代码，我们直接在 `Go` 代码里创建了一个 `C` 语言字符串，然后传递给 `C` 语言函数，这里我们也需要做内存释放操作。当然，其实你也可以不是释放，然后在 `C` 语言里进行释放。但最好的方式还是自己来处理。秉承一个原则：**谁创建谁释放** 是不会有错的。
+
+
+## C 调用 Go
+
+除了 `Go` 调用 `C` 语言是我们比较常用的之外，其实 `C` 语言调用 `Go` 语言也是可以的。我们可以使用 `export` 关键字来导出 `Go` 语言的函数，然后在 `C` 语言里调用。
+
+### 基本用法
+
+如果想在 `C` 语言里调用 `Go` 的函数，那么我们需要在 `Go` 语言里导出这个函数，我们可以使用 `export` 关键字来导出函数，示例代码如下：
+
+```go copy showLineNumbers
+
+```

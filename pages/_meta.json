@@ -1,4 +1,10 @@
 {
   "index": "介绍",
-  "slice": "关于slice"
+  "slice": {
+    "title": "关于slice"
+  },
+  "grpc": "grpc编程",
+  "cgo": {
+    "title": "cgo编程"
+  }
 }

@@ -1,0 +1,37 @@
+## 使用wireshark解析grpc协议包
+
+有些时候我们需要对 `grpc` 请求的进行测试，比如验证 `grpc` 重试机制是否生效，使用 `wireshark` 可以很方便的对 `grpc` 协议包进行解析。但是 `wireshark` 默认不会解析 `grpc` 协议包，需要进行一些配置操作。
+
+### 安装wireshark
+
+首先确保你的 `wireshark` 是比较新的版本。旧版本可能对 `grpc` 协议包的解析不支持。官方下载地址：https://www.wireshark.org/download.html
+
+### 导入proto文件
+
+在 `wireshark` 设置中，找到 `Protocols` -> `Protobuf` -> `Protobuf search path`，点击编辑按钮，添加你的 `proto` 文件所在的目录。
+
+![](/static/wireshark-grpc-parse-01.png)
+
+选择你自己的 `*.proto` 文件所在的目录路径，**确保勾选了 `Load All Files` 选项！**
+
+![](/static/wireshark-grpc-parse-02.png)
+
+然后，点击 `OK` 按钮，确保如下截图的选项已经勾选上：
+
+![](/static/wireshark-grpc-parse-03.png)
+
+### 解析grpc协议包
+
+现在你可以针对一个grpc服务进行抓包，不过我们还需要对 `grpc` 数据包做一下解析配置操作。`wireshark` 默认把所有的数据包解析为`TCP`协议，我们要让它支持 `http2` 协议。
+
+首先抓取一个当前任意 `grpc` 的 `TCP` 数据包，你可以使用 `tcp.port == {grpc_port}` 进行过滤，只显示出和`grpc`相关的包，然后右键点击该数据包，选择 `Decode As` -> `Transport` -> `HTTP2`，如下图所示：
+
+![](/static/wireshark-grpc-parse-04.png)
+
+![](/static/wireshark-grpc-parse-05.png)
+
+然后，你就可以看到 `grpc` 协议包已经被解析出来了，你可以选择使用 `grpc` 或者 `http2` 协议进一步过滤数据包。
+
+![](/static/wireshark-grpc-parse-06.png)
+
+
