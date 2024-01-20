@@ -1,14 +1,17 @@
 {
   "wireshark": {
-    "title": "wireshark解析Grpc包"
+    "title": "wireshark抓包"
   },
   "grpc-retry-catch": {
-    "title": "抓取grpc重试包"
+    "title": "grpc重试验证"
   },
   "grpc-service-config": {
     "title": "grpc服务配置避坑"
   },
   "grpc-call-timeout": {
     "title": "方法调用超时配置"
+  },
+  "grpc-graceful-restart": {
+    "title": "平滑重启"
   }
 }
