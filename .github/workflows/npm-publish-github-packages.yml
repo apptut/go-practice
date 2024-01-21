@@ -41,6 +41,9 @@ jobs:
           echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           printf "$PASSPHRASE\n" | ssh-keygen -p -f ~/.ssh/id_rsa
+          chmod 700 ~/.ssh
+          ping -c 3 $HOST
+          ssh -o StrictHostKeyChecking=no www@lyw.im "ls -la"
       - name: rsync code
         run: |  
           rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" ./out/* www@lyw.im:/home/www/public/
