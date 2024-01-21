@@ -41,8 +41,7 @@ jobs:
           echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           chmod 700 ~/.ssh
-          ssh -o StrictHostKeyChecking=no www@lyw.im "ls -la"
       - name: rsync code
         run: |  
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" ./out/* www@lyw.im:/home/www/public/
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" ./out/* $USER@$HOST:$REMOTE_DIR
  
