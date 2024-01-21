@@ -43,5 +43,5 @@ jobs:
           chmod 700 ~/.ssh
       - name: rsync code
         run: |  
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" ./out/* $USER@$HOST:$REMOTE_DIR
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" ./out/* $USER@45.152.66.199:$REMOTE_DIR
  
