@@ -31,14 +31,18 @@ jobs:
         continue-on-error: true
       - run: ls -l
       - uses: contention/rsync-deployments@v2.0.0
+        env:
+          REMOTE_USER: ${{ secrets.USER }}
+          REMOTE_HOST: ${{ secrets.HOST }}
+          REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
         with:
           flags: -avzr --delete
-          user: ${{ secrets.USER }}
+          user: $REMOTE_USER
           # The deployment target
-          host: ${{ secrets.HOST }}
+          host: $REMOTE_HOST
           # The local path to sync
           localpath: /out/
           # The remote path to sync
-          remotepath: ${{ secrets.REMOTE_DIR }}
+          remotepath: $REMOTE_DIR
           # The private key
           deploy_key: ${{ secrets.DEPLOY_KEY }}
