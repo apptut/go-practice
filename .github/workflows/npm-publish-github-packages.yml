@@ -1,0 +1,22 @@
+# 部署编译项目代码到机器
+
+name: Node.js Package
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm build
+      - run: npm test
+
+ # TODO 
+ # deploy:
