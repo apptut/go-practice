@@ -29,9 +29,6 @@ jobs:
 #      - run: npm install
 #      - run: npm run build
 #        continue-on-error: true
-      - run: |
-          echo ${{ env.REMOTE_USER }}
-          echo ${{ env.REMOTE_HOST }}
       - uses: contention/rsync-deployments@v2.0.0
         with:
           flags: -avzr --delete
