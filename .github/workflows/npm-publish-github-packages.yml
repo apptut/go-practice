@@ -3,8 +3,11 @@
 name: Node.js Package
 
 on:
-  release:
-    types: [created]
+  push:
+    branches:
+      - master
+#  release:
+#    types: [created]
 
 jobs:
   build:
@@ -38,5 +41,7 @@ jobs:
           echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           printf "$PASSPHRASE\n" | ssh-keygen -p -f ~/.ssh/id_rsa
-          rsync -avz -e "ssh -o StrictHostKeyChecking=no -l $USER" ./out/* $HOST:$REMOTE_DIR
+      - name: rsync code
+        run: |  
+          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" ./out/* www@lyw.im:/home/www/public/
  
