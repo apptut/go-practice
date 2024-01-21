@@ -14,21 +14,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-#      - uses: actions/setup-node@v3
-#        with:
-#          node-version: 20
-#      - uses: actions/cache@v3
-#        with:
-#          path: |
-#            ~/.npm
-#            ${{ github.workspace }}/.next/cache
-#          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
-#          restore-keys: |
-#            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
-#      - run: rm -rf package-lock.json
-#      - run: npm install
-#      - run: npm run build
-#        continue-on-error: true
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+      - run: rm -rf package-lock.json
+      - run: npm install
+      - run: npm run build
+        continue-on-error: true
       - uses: contention/rsync-deployments@v2.0.0
         with:
           flags: -avzr --delete
