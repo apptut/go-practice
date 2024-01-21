@@ -32,9 +32,9 @@ jobs:
       - uses: contention/rsync-deployments@v2.0.0
         with:
           flags: -avzr --delete
-          user: www
+          user: ${{ secrets.USER }}
           # The deployment target
-          host: 45.152.66.199
+          host: ${{ secrets.HOST }}
           # The local path to sync
           localpath: /out/
           # The remote path to sync
