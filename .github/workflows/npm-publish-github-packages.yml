@@ -17,6 +17,17 @@ jobs:
       - run: npm ci
       - run: npm build
       - run: npm test
-
- # TODO 
- # deploy:
+      - name: Deploy to Server
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          PASSPHRASE: ${{ secrets.PASSPHRASE }}
+          HOST: ${{ secrets.HOST }}
+          REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
+          USER: ${{ secrets.USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          printf "$PASSPHRASE\n" | ssh-keygen -p -f ~/.ssh/id_rsa
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no -l $USER" ./out/* $HOST:$REMOTE_DIR
+ 
