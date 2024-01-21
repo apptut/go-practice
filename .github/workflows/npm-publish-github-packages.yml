@@ -29,19 +29,14 @@ jobs:
       - run: npm install
       - run: npm run build
         continue-on-error: true
-      - name: Deploy to Server
-        env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-          PASSPHRASE: ${{ secrets.PASSPHRASE }}
-          HOST: ${{ secrets.HOST }}
-          REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
-          USER: ${{ secrets.USER }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$DEPLOY_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          chmod 700 ~/.ssh
-      - name: rsync code
-        run: |  
-          rsync -avz -e "ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no" ./out/* www@45.152.66.199:$REMOTE_DIR
- 
+      - uses: contention/rsync-deployments@v2.0.0
+        with:
+          user: www
+          # The deployment target
+          host: 45.152.66.199
+          # The local path to sync
+          localpath: ./out
+          # The remote path to sync
+          remotepath: /home/www/
+          # The private key
+          deploy_key: ${{ secrets.DEPLOY_KEY }}
