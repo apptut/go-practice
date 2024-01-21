@@ -32,11 +32,12 @@ jobs:
       - run: ls -l
       - uses: contention/rsync-deployments@v2.0.0
         with:
+          flags: -avzr --delete
           user: www
           # The deployment target
           host: 45.152.66.199
           # The local path to sync
-          localpath: ./out/
+          localpath: /out/
           # The remote path to sync
           remotepath: /home/www/
           # The private key
