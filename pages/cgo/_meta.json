@@ -1,11 +1,6 @@
 {
   "basic": {
-    "title": "cgo基本用法",
-    "theme": {
-      "toc": {
-
-      }
-    }
+    "title": "cgo基本用法"
   },
   "notice": "注意事项"
 }

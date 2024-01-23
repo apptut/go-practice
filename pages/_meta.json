@@ -3,8 +3,8 @@
   "slice": {
     "title": "关于slice"
   },
-  "grpc": "grpc编程",
+  "grpc": "gRPC",
   "cgo": {
-    "title": "cgo编程"
+    "title": "cgo"
   }
 }

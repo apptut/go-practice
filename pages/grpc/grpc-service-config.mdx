@@ -1,0 +1,155 @@
+import { Callout } from "nextra/components";
+
+<Callout type={"info"}>
+    官方文档：https://github.com/grpc/grpc/blob/master/doc/service_config.md
+</Callout>
+
+`gRPC` 提供了 `service_config` 选项，主要在如下一些场景中使用：
+
+1. 在解析器（resolver) API中，解析器插件用它来向 `gRPC` 客户端返回服务配置。
+2. 在 `gRPC` 客户端API中，用户可以查询通道以获取与通道关联的服务配置（用于调试目的）。
+3. 在 `gRPC` 客户端API中，用户可以明确地设置服务配置。这可以用于在单元测试中设置配置。如果解析器插件未返回服务配置，也可以使用它来设置将使用的默认配置。
+
+
+其实我们可以利用第三个特性，来为 `gRPC client` 提供一个默认全局配置，比如，全局的重试机制、函数调用超时机制。
+
+## 函数调用全局超时
+
+`gRPC` 默认的没有一个针对函数调用的超时机制，但我们可以基于 `service_config` 中的 `timeout` 字段来实现，从而避免在业务上层使用 `context.WithTimeout` 来包装。
+
+```json
+{
+  "loadBalancingConfig": [ { "round_robin": {} } ],
+  "methodConfig": [
+    {
+      "name": [
+        { "service": "foo", "method": "bar" },
+        { "service": "baz" }
+      ],
+      "timeout": "1.000000001s"
+    }
+  ]
+}
+```
+`timeout` 会作为 `name` 中匹配到的服务 `gRPC` 给这个服务的具体函数发送请求的，并限制超时时间，所以我们可以利用它来做一个全局的函数调用超时机制。
+
+## 注意超时和重试的关系
+
+如果你使用了 `timeout`，同时还配置了重试策略：
+
+```json
+{
+  "loadBalancingConfig": [ { "round_robin": {} } ],
+  "methodConfig": [
+    {
+      "name": [
+        { "service": "foo", "method": "bar" },
+        { "service": "baz" }
+      ],
+      "timeout": "1s",
+      "retryPolicy": {
+        "maxAttempts": 4,
+        "initialBackoff": "0.1s",
+        "maxBackoff": "1s",
+        "backoffMultiplier": 2,
+        "retryableStatusCodes": [ "UNAVAILABLE" ]
+      }
+    }
+  ]
+}
+```
+那么请注意：**timeout 配置的时间应该是所有重试次数和总的时间** 否测重试未完成则会被超时掐断，导致重试未完全，报出接口超时错误：
+
+```
+rpc error: code = DeadlineExceeded desc = context deadline exceeded
+```
+
+## 服务名称
+
+`gRPC` 的 `service_config` 中的 `name` 字段，可以配置如下形式：
+
+```
+method_config { name { } ... }
+method_config { name { service: "MyService" } ... }
+method_config { name { service: "MyService" method: "Foo" } ... }
+```
+
+如果你想针对所有的 `gRPC` 服务的所有方法都生效，那么使用第一种配置即可：
+
+```json
+{
+  "name": [{}]
+}
+```
+
+或者是：
+
+```json
+{
+  "name": [{"service": null}]
+}
+```
+
+如上两种写法都能匹配到所有的 `gRPC` 服务的所有方法，但 **`name` 不能是 `[]` 或者 `null`!**
+
+### 服务命名继承关系
+
+如果你同事配置了上述 `name` 的多种形式：
+
+```json
+{
+  "name": [
+    {},
+    {"service": "MyService"},
+    {"service": "MyService", "method": "Foo"}
+  ]
+}
+```
+
+那么 `gRPC` 会优先查找 `{"service": "MyService", "method": "Foo"}` 的配置，如果没有找到，那么会查找 `{"service": "MyService"}` 的配置，如果还是没有找到，那么会查找 `{}` 的配置。
+
+### service注意
+
+一般来说我们针对所有的 `service` 都启动统一的重试策略，但如果你只是想针对某些 `service` 启动，那么就需要细化 `service` 的名称，比如：
+
+```json
+{
+  "name": [
+    {"service": "demo.DemoSvc"}
+  ]
+}
+```
+
+上面的 `service` 值来自于的 `proto` 文件中的 `package` 和 `service` 组合，如果 `package` 未声明，则为空值，比如：
+
+```proto
+option go_package = ".;demo";
+package demo;
+
+service DemoSvc {
+  rpc Demo(FooRequest) returns (FooResponse) {}
+}
+```
+
+<Callout type={"warning"}>
+    特别需要注意的是，上述的 `package` 一定是 `proto` 中的 `package`, 而不是 `go_package` 中的值！
+</Callout>
+
+如果你不能完全确认 `service` 是正确的值，那么你可以参考 `proto` 文件中生成的, `demo_grpc.pb.go` 也能找到类似的 `service` 描述对象：
+
+```go
+var DemoSvc_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "demo.DemoSvc",
+	HandlerType: (*DemoSvcServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Demo",
+			Handler:    _DemoSvc_Demo_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "app/grpc/proto/demo/demo.proto",
+}
+```
+
+这里的 `ServiceName` 就是 `service` 的值。

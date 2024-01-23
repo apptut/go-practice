@@ -1,8 +1,8 @@
-如果 `wireshark` 已经配置好了抓取 `grpc` 环境，接下来我们可以实战测试 `grpc` 重试机制是否符合预期。
+如果 `wireshark` 已经配置好了抓取 `gRPC` 环境，接下来我们可以实战测试 `gRPC` 重试机制是否符合预期。
 
 ### 1. GRPC重试机制
 
-`grpc` client 支持重试机制，在构建 `grpc.Dail` 时，使用 `grpc.WithDefaultServiceConfig()` 配置重试策略，如下：
+`gRPC` client 支持重试机制，在构建 `grpc.Dail` 时，使用 `grpc.WithDefaultServiceConfig()` 配置重试策略，如下：
 
 ```go
 var strategy = `{
@@ -33,7 +33,7 @@ conn, err := grpc.Dial(
 )
 ```
 
-当上代码配置了，当 `grpc` 服务如果返回了 `UNAVAILABLE` 错误，会自动重试，重试 `2` 次（`MaxAttempts`）。
+当上代码配置了，当 `gRPC` 服务如果返回了 `UNAVAILABLE` 错误，会自动重试，重试 `2` 次（`MaxAttempts`）。
 
 import { Callout } from 'nextra/components'
 
@@ -43,7 +43,7 @@ import { Callout } from 'nextra/components'
 
 ### 2.使用wireshark验证
 
-我们不妨使用 `wireshark` 来验证一下，上述重试的机制是否是 `2` 次，在开始之前还需要把我们本地的 `grpc server` 返回一个 `UNAVAILABLE` 错误，这样才能触发重试机制。
+我们不妨使用 `wireshark` 来验证一下，上述重试的机制是否是 `2` 次，在开始之前还需要把我们本地的 `gRPC server` 返回一个 `UNAVAILABLE` 错误，这样才能触发重试机制。
 
 ```go filename="grpc_server.go"
 // Demo 实现pb.go中DemoSvc中的Demo函数
@@ -58,7 +58,7 @@ func (ds *DemoSvc) Demo(ctx context.Context, req *demo_pb.DemoRequest) (*demo_pb
 // ... 省略其它代码
 client := demo_pb.NewDemoSvcClient(conn)
 resp, err := client.Demo(context.Background(), &demo_pb.DemoRequest{
-    Name: "grpc retry",
+    Name: "gRPC retry",
 })
 
 // ...
@@ -67,4 +67,4 @@ resp, err := client.Demo(context.Background(), &demo_pb.DemoRequest{
 
 ![](/static/wireshark-grpc-parse-07.png)
 
-如图所示，你会发现 `grpc` client 重试了 `2` 次
+如图所示，你会发现 `gRPC` client 重试了 `2` 次

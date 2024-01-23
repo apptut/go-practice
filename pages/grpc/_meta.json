@@ -3,15 +3,12 @@
     "title": "wireshark抓包"
   },
   "grpc-retry-catch": {
-    "title": "grpc重试验证"
+    "title": "重试验证"
   },
   "grpc-service-config": {
-    "title": "grpc服务配置避坑"
+    "title": "服务配置避坑"
   },
-  "grpc-call-timeout": {
-    "title": "方法调用超时配置"
-  },
-  "grpc-graceful-restart": {
+  "graceful-restart": {
     "title": "平滑重启"
   }
 }
