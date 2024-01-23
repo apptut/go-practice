@@ -33,7 +33,7 @@ conn, err := grpc.Dial(
 )
 ```
 
-当上代码配置了，当 `gRPC` 服务如果返回了 `UNAVAILABLE` 错误，会自动重试，重试 `2` 次（`MaxAttempts`）。
+当上述代码配置了，当 `gRPC` 服务如果返回了 `UNAVAILABLE` 错误，会自动重试，重试 `2` 次（`MaxAttempts`）。
 
 import { Callout } from 'nextra/components'
 
