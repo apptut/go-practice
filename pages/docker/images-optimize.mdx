@@ -1,0 +1,120 @@
+在容器部署时我们需要对部署的镜像做一些尺寸上的精简，主要原因还是由于构建的时候尺寸太大导致`CI/CD`的时候传输时间过长，导致部署体验很差，我们可以通过如下阶段进行优化：
+
+## 镜像选择
+
+在实际应用中到底部署时选择`alpine`还是`CentOS`，我坚持的一个原则是：**保证开发、编译、测试、生产环境的一致性**，我并不推崇部署时一定要选择`alphine`做到镜像尺寸的极简主义。所以为了避免开发测试和最终部署不一致导致的线上潜在隐患，如果说你不是绝对的确认部署的服务是否操作系统有相关依赖，那么保持一致性我觉得是最重要的。
+
+比如，如果在你的项目里你使用了 `cgo` 调用了 `glibc` 库，那么使用 `alphine` 镜像绝对是有问题的，因为 `alphine` 是使用 `musl` 库的，这样就会导致你的程序在 `alphine` 镜像上运行不了。
+
+但如果你明确的知道你的服务是平台服务无关的，比如一个纯粹的 `golang` 服务，或者仅仅是 `html` 静态文件服务，那么使用 `alphine` 镜像是一个不错的选择, 毕竟 `alphine` 基础镜像尺寸仅仅只有 `5M` 左右，相比 `CentOS` 的 `200M` 左右，这样可以大大减少镜像的尺寸。
+
+## 多阶段构建
+
+多阶段构建是 `Docker` 17.05 版本引入的一个新特性，可以让我们在一个 `Dockerfile` 文件中构建多个镜像，编译镜像可能很重然后将最终的镜像拷贝到一个新的镜像中，这样可以大大减少镜像的尺寸。
+
+```Dockerfile
+# 构建阶段
+FROM golang:1.12.5 as builder
+WORKDIR /home/www
+COPY . .
+RUN go mod tidy && go build -o bin/app main.go
+
+# 运行阶段
+FROM centos:7
+
+# 从构建阶段复制文件
+COPY --from=builder /home/www/bin/app /home/www/bin/app
+
+CMD ["/home/www/bin/app"]
+```
+
+## 优化镜像
+
+### 查看镜像尺寸
+
+镜像构建最重要的优化点就是尽量减少镜像层数，因为每一层都会增加镜像的尺寸，我们可以使用如下命令查看你构建镜像的层数以及大小：
+
+```shell
+docker history <image>
+```
+**输出结果**
+
+```
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT
+b070a7bf1b60        3 months ago        /bin/sh -c mkdir -p logs                        0B
+8b6e86c145f8        3 months ago        /bin/sh -c #(nop) COPY dir:33b709220dcf98bb0…   23.1MB
+d6c8c5a854a7        3 months ago        /bin/sh -c #(nop) COPY file:fbb56780d33ba9c1…   1.78kB
+3647a8bc654e        3 months ago        /bin/sh -c #(nop) COPY dir:e09788108fc1642a5…   26.7kB
+cf57008a6a11        3 months ago        /bin/sh -c #(nop) WORKDIR /home/q/system/mus…   0B
+181ff1acf7d6        3 months ago        /bin/sh -c #(nop)  ENV PRJ_HOME=/home/q/syst…   0B
+d8df2ac16eae        3 months ago        /bin/sh -c #(nop)  ARG PRJ_HOME                 0B
+7e009cd4e233        17 months ago       /bin/sh -c yum install -y qbus-go               323MB
+<missing>           18 months ago       /bin/sh -c yum install -y jaeger-agent-1.22.0   325MB
+<missing>           5 years ago         /bin/sh -c #(nop)  ENTRYPOINT ["/usr/local/b…   0B
+<missing>           5 years ago         /bin/sh -c #(nop) ADD file:8249c2c748f209e63…   1.94kB
+<missing>           5 years ago         /bin/sh -c #(nop) ADD file:463e1b77e1a4855c4…   4.59MB
+<missing>           5 years ago         /bin/sh -c yum -y install     gcc     gcc-c+…   311MB
+<missing>           5 years ago         /bin/sh -c rm -f /etc/yum.repos.d/* &&     r…   63MB
+<missing>           5 years ago         /bin/sh -c mkdir /data                          0B
+<missing>           5 years ago         /bin/sh -c #(nop) ADD file:59b73f10d606ada4b…   1.51GB
+```
+如果你查看的每层内容不想被截断，可以使用如下命令：
+
+```shell
+docker history --no-trunc <image>
+```
+
+如果你只想看每个镜像总的大小也可以简单使用，最后一列即是镜像的总大小：
+
+```shell
+docker images | grep <imageID>
+# centos               test-f948316-202402021224       33eb4efa4e6a        26 hours ago        2.71GB
+```
+
+### 优化Dockerfile
+
+#### 减少层数
+
+通过合并命令，可以减少镜像的层数，比如：
+
+```Dockerfile
+RUN yum install -y gcc
+RUN yum install -y gcc-c++
+```
+
+可以合并成：
+
+```Dockerfile
+RUN yum install -y gcc gcc-c++
+```
+
+#### 清理临时文件
+
+  在构建镜像的时候，我们可以清理掉一些不必要的文件，`yum` 安装后可以使用 `yum clean all` 清理掉缓存文件，比如：
+
+```Dockerfile
+RUN yum install -y gcc \
+&&  yum clean all
+```
+## 其它构建问题
+
+### 替换yum源
+
+尤其是在国内，使用默认的 `yum` 源下载速度非常慢，我们可以使用国内的 `yum` 源，比如阿里云的 `yum` 源：
+
+```Dockerfile
+RUN curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo \
+
+# 阿里云有些软件不全，所以再引入epel源
+&& curl -o /etc/yum.repos.d/epel.repo https://mirrors.aliyun.com/repo/epel-7.repo
+
+# 如果你绝对信任安装软件，不需要签名校验，那么可以禁掉签名校验加速安装 \
+&& sed -i 's#gpgcheck=1#gpgcheck=0#' /etc/yum.repos.d/CentOS-Base.repo \
+&& sed -i 's#gpgcheck=1#gpgcheck=0#' /etc/yum.repos.d/epel.repo \
+
+# 阿里云提供了多个镜像源，单个别内网环境对 aliyuncs.com dns无法解析，导致无法下载，所以我们只保留aliyun.com源 \
+&& sed -i '/aliyuncs.com/d' /etc/yum.repos.d/CentOS-Base.repo
+&& sed -i '/aliyuncs.com/d' /etc/yum.repos.d/epel.repo
+```
+
+如上的配置视具体情况而定！
