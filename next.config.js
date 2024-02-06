@@ -3,6 +3,7 @@ const withNextra = require('nextra')({
     themeConfig: './theme.config.jsx',
 })
 
+// output config
 module.exports = withNextra({
     output: 'export',
     trailingSlash: true,
