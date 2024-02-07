@@ -1,1 +1,32 @@
 注意事项
+
+## MacOS下CLang编译问题
+
+在MacOS下，如果使用 `CLang` 编译 `cgo` 可能会出现以下错误：
+
+```
+ld: Undefined symbols:
+    _Swig_DirectorQbusConsumerCallback_callback_delixxxxx
+```
+
+上面的错误告诉我们，我们在 `c/c++` 使用了某个函数，但这个函数在所有的编译文件里都找不到定义的地方，导致链接失败。为什么会有这种未定义的函数情况呢？是因为这些函数的作用是 `c/c++` 用来回调 `go` 语言的函数，所以这些函数的定义放在了 `cgo` 文件中, 类似下面这样：
+
+```go
+// Swig_DirectorQbusConsumerCallback_callback_delixxxxx
+func Swig_DirectorQbusConsumerCallback_callback_delixxxxx() {
+}
+```
+
+但我们在编译 `c/c++` 文件时（期望导出 .so 库供golang使用），上面的导出函数并未参数其中，导致链接器链接时检查函数符号报错！**但这个错误在 `linux` 下并不会出现，因为 `linux` 下的 `gcc` 默认忽略了这个错误**。而且理论上来说，我们在实际使用的时候，肯定也要编译这个 `go` 源文件，在和 `c/c++` 文件一起链接，所以这个错误在实际使用时也不会出现。
+
+所以，如果是在 `MacOS` 下编译 `c/c++` 文件，可以忽略这个错误，或者在编译时加上 `-Wl,-undefined,dynamic_lookup` 参数，这样链接器就会忽略这个错误。
+
+如果是使用 `cmake` 编译，可以在 `CMakeLists.txt` 文件中加上这个参数：
+
+```cmake
+# 在 add_library 之后加上
+set_target_properties(${LIBNAME} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+```
+
+`${LIBNAME}` 是你的目标库名。
+
