@@ -9,9 +9,13 @@ ld: Undefined symbols:
     _Swig_DirectorQbusConsumerCallback_callback_delixxxxx
 ```
 
-上面的错误告诉我们，我们在 `c/c++` 使用了某个函数，但这个函数在所有的编译文件里都找不到定义的地方，导致链接失败。为什么会有这种未定义的函数情况呢？是因为这些函数的作用是 `c/c++` 用来回调 `go` 语言的函数，所以这些函数的定义放在了 `cgo` 文件中, 类似下面这样：
+上面的错误告诉我们，我们在 `c/c++` 使用了某个函数，但这个函数在所有的编译文件里都找不到定义的地方，导致链接失败。
 
-```go
+经我们检查代码，我们确实发觉在 `c/c++` 中并未实际定义这些函数，而是直接使用了 `extern` 声明，告诉编译器这些函数是在其他地方定义的。
+
+为什么会有这种未定义的函数情况呢？是因为这些函数的作用是 `c/c++` 用来回调 `go` 语言的函数，所以这些函数的定义放在了 `cgo` 文件中, 类似下面这样：
+
+```go filename="xxx.go"
 // Swig_DirectorQbusConsumerCallback_callback_delixxxxx
 func Swig_DirectorQbusConsumerCallback_callback_delixxxxx() {
 }
