@@ -12,7 +12,7 @@
 
 多阶段构建是 `Docker` 17.05 版本引入的一个新特性，可以让我们在一个 `Dockerfile` 文件中构建多个镜像，编译镜像可能很重然后将最终的镜像拷贝到一个新的镜像中，这样可以大大减少镜像的尺寸。
 
-```Dockerfile
+```dockerfile
 # 构建阶段
 FROM golang:1.12.5 as builder
 WORKDIR /home/www
@@ -77,14 +77,14 @@ docker images | grep <imageID>
 
 通过合并命令，可以减少镜像的层数，比如：
 
-```Dockerfile
+```dockerfile
 RUN yum install -y gcc
 RUN yum install -y gcc-c++
 ```
 
 可以合并成：
 
-```Dockerfile
+```dockerfile
 RUN yum install -y gcc gcc-c++
 ```
 
@@ -92,7 +92,7 @@ RUN yum install -y gcc gcc-c++
 
   在构建镜像的时候，我们可以清理掉一些不必要的文件，`yum` 安装后可以使用 `yum clean all` 清理掉缓存文件，比如：
 
-```Dockerfile
+```dockerfile
 RUN yum install -y gcc \
 &&  yum clean all
 ```
@@ -102,7 +102,7 @@ RUN yum install -y gcc \
 
 尤其是在国内，使用默认的 `yum` 源下载速度非常慢，我们可以使用国内的 `yum` 源，比如阿里云的 `yum` 源：
 
-```Dockerfile
+```dockerfile
 RUN curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo \
 
 # 阿里云有些软件不全，所以再引入epel源
