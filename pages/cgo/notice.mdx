@@ -2,6 +2,8 @@
 
 ## MacOS下CLang编译问题
 
+### ld: Undefined symbols
+
 在MacOS下，如果使用 `CLang` 编译 `cgo` 可能会出现以下错误：
 
 ```
@@ -34,3 +36,12 @@ set_target_properties(${LIBNAME} PROPERTIES LINK_FLAGS "-undefined dynamic_looku
 
 `${LIBNAME}` 是你的目标库名。
 
+### -fcoalesce-templates
+
+在 `MacOS` 下编译 `c++` 使用的 `boost` 库时可能会遇到 `clang: error: unknown argument: '-fcoalesce-templates'`，需要指定编译的工具集： `--with-toolset=clang`
+
+```shell
+./bootstrap.sh --prefix="$INSTALL_DIR" --with-libraries=regex,system --with-toolset=clang
+```
+
+`boost` 版本为：`1.70.0` 会出现此问题，其它版本未测试。
